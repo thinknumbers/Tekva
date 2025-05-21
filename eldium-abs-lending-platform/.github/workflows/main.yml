@@ -9,9 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: Eldium
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js 18.x
