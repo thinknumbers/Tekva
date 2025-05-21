@@ -19,6 +19,26 @@ router.get('/', authenticateJWT, async (req, res) => {
   }
 });
 
+router.get('/:id', authenticateJWT, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('id', id)
+      .input('user_id', userId)
+      .query('SELECT * FROM timesheets WHERE id = @id AND user_id = @user_id');
+    if (!result.recordset[0]) {
+      return res.status(404).json({ success: false, message: 'Timesheet not found.' });
+    }
+    const ts = result.recordset[0];
+    ts.data = ts.data ? JSON.parse(ts.data) : [];
+    res.json({ success: true, timesheet: ts });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch timesheet.', error: err.message });
+  }
+});
+
 router.post('/:id', authenticateJWT, async (req, res) => {
   const { id } = req.params;
   const { days, expenses, comment } = req.body;
@@ -67,6 +87,33 @@ router.post('/:id', authenticateJWT, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Failed to submit timesheet.', error: err.message });
+  }
+});
+
+router.put('/:id', authenticateJWT, async (req, res) => {
+  const { id } = req.params;
+  const { days, expenses, comment } = req.body;
+  const userId = req.user.id;
+  try {
+    const pool = await poolPromise;
+    const result = await pool.request()
+      .input('id', id)
+      .input('user_id', userId)
+      .input('data', JSON.stringify(days))
+      .input('expenses', expenses)
+      .input('comment', comment)
+      .input('status', 'pending')
+      .query(`
+        UPDATE timesheets
+        SET data = @data, expenses = @expenses, comment = @comment, status = @status, updated_at = GETDATE()
+        WHERE id = @id AND user_id = @user_id
+      `);
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({ success: false, message: 'Timesheet not found for this user.' });
+    }
+    res.json({ success: true, message: 'Timesheet saved as draft.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to save timesheet.', error: err.message });
   }
 });
 

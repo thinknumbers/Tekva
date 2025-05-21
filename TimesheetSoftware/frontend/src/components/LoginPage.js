@@ -13,19 +13,33 @@ import {
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import './LoginPage.css'; // We'll create this for custom styles
+import axios from 'axios';
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const apiUrl = process.env.REACT_APP_API_URL;
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // TODO: Implement actual login logic here
-    console.log('Email:', email, 'Password:', password);
-    // For now, let's assume login is successful and navigate to a placeholder dashboard
-    // navigate('/dashboard'); 
-    alert('Login functionality to be implemented!');
+    setError('');
+    try {
+      const response = await axios.post(`${apiUrl}/auth/login`, {
+        email,
+        password
+      });
+      if (response.data.success) {
+        localStorage.setItem('ka_jwt', response.data.token);
+        localStorage.setItem('ka_user', JSON.stringify(response.data.user));
+        navigate('/dashboard'); // You will need to implement this route/component
+      } else {
+        setError(response.data.message || 'Login failed.');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed.');
+    }
   };
 
   return (
@@ -48,6 +62,9 @@ function LoginPage() {
             Login to your account
           </Typography>
           <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+            {error && (
+              <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>
+            )}
             <TextField
               margin="normal"
               required

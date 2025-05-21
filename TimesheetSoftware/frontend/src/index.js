@@ -4,6 +4,7 @@ import App from './App';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { NotificationProvider } from './components/NotificationContext';
 
 const theme = createTheme({
   palette: {
@@ -26,7 +27,9 @@ root.render(
     <Router>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <App />
+        <NotificationProvider>
+          <App />
+        </NotificationProvider>
       </ThemeProvider>
     </Router>
   </React.StrictMode>
