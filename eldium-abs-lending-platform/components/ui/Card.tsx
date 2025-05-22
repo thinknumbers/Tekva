@@ -18,7 +18,7 @@ const Card: React.FC<CardProps> = ({ title, children, className, titleClassName,
   }
 
   return (
-    <div className={`bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden ${className || ''}`}>
+    <div className={`bg-gray-100 dark:bg-gray-900 shadow-sm rounded-lg overflow-hidden ${className || ''}`}>
       {title && (
         <div className={`px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center ${titleClassName || ''}`}>
           <h3 className={`${titleSizeClasses[titleSize]} text-gray-700 dark:text-gray-100`}>{title}</h3>
