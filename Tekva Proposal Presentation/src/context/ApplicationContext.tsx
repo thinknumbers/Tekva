@@ -62,6 +62,7 @@ interface ApplicationContextType {
   addFinancialApplication: (app: Omit<FinancialApplication, 'id' | 'date' | 'status'>, file?: File) => Promise<void>;
   addWorkApplication: (app: Omit<WorkApplication, 'id' | 'date' | 'status'>, file?: File) => Promise<void>;
   addVentureApplication: (app: Omit<VentureApplication, 'id' | 'date' | 'status'>) => Promise<void>;
+  updateApplicationStatus: (id: string, type: 'financial' | 'work' | 'venture', status: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -262,6 +263,24 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
+  const updateApplicationStatus = async (id: string, type: 'financial' | 'work' | 'venture', status: string) => {
+    const table = type === 'financial' 
+      ? 'financial_applications' 
+      : type === 'work' 
+        ? 'work_applications' 
+        : 'venture_applications';
+
+    const { error } = await supabase
+      .from(table)
+      .update({ status })
+      .eq('id', id);
+
+    if (error) throw error;
+    
+    // Refresh data immediately
+    fetchData();
+  };
+
   return (
     <ApplicationContext.Provider
       value={{
@@ -271,6 +290,7 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
         addFinancialApplication,
         addWorkApplication,
         addVentureApplication,
+        updateApplicationStatus,
         loading
       }}
     >
