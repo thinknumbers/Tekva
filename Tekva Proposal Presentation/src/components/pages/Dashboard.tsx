@@ -1,63 +1,29 @@
 import { useState } from 'react';
-import { 
-  LayoutDashboard, 
-  DollarSign, 
-  Briefcase, 
-  Rocket, 
+import {
   Users,
+  Briefcase,
   TrendingUp,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Eye
+  DollarSign,
+  Calendar,
+  ArrowRight,
+  Search,
+  Filter,
+  MoreVertical,
+  Download,
+  FileText,
+  ExternalLink
 } from 'lucide-react';
 import { useApplications } from '../../context/ApplicationContext';
 
 export function Dashboard() {
-  const { financialApplications, workApplications, ventureApplications } = useApplications();
-  const [activeTab, setActiveTab] = useState<'overview' | 'financial' | 'work' | 'venture'>('overview');
-  const [selectedApplication, setSelectedApplication] = useState<string | null>(null);
-
-  const stats = [
-    {
-      icon: DollarSign,
-      label: 'Financial Applications',
-      value: financialApplications.length,
-      change: '+12%',
-      color: 'blue',
-    },
-    {
-      icon: Briefcase,
-      label: 'Work Pathways',
-      value: workApplications.length,
-      change: '+8%',
-      color: 'green',
-    },
-    {
-      icon: Rocket,
-      label: 'Ventures',
-      value: ventureApplications.length,
-      change: '+15%',
-      color: 'purple',
-    },
-    {
-      icon: Users,
-      label: 'Total Applicants',
-      value: financialApplications.length + workApplications.length + ventureApplications.length,
-      change: '+11%',
-      color: 'slate',
-    },
-  ];
+  const { financialApplications, workApplications, ventureApplications, loading } = useApplications();
+  const [activeTab, setActiveTab] = useState<'all' | 'financial' | 'work' | 'venture'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved':
-      case 'placed':
-      case 'incubating':
         return 'bg-green-100 text-green-700';
-      case 'reviewing':
-      case 'matched':
-        return 'bg-blue-100 text-blue-700';
       case 'pending':
         return 'bg-amber-100 text-amber-700';
       case 'rejected':
@@ -67,344 +33,318 @@ export function Dashboard() {
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved':
-      case 'placed':
-      case 'incubating':
-        return <CheckCircle className="w-4 h-4" />;
-      case 'reviewing':
-      case 'matched':
-        return <Clock className="w-4 h-4" />;
-      case 'pending':
-        return <Clock className="w-4 h-4" />;
-      case 'rejected':
-        return <XCircle className="w-4 h-4" />;
+  const getStatusIcon = (type: string) => {
+    switch (type) {
+      case 'financial':
+        return <DollarSign className="w-5 h-5 text-blue-600" />;
+      case 'work':
+        return <Briefcase className="w-5 h-5 text-green-600" />;
+      case 'venture':
+        return <TrendingUp className="w-5 h-5 text-purple-600" />;
       default:
-        return <Clock className="w-4 h-4" />;
+        return <Users className="w-5 h-5 text-slate-600" />;
     }
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const allApplications = [
+    ...financialApplications.map(app => ({ ...app, type: 'financial' as const })),
+    ...workApplications.map(app => ({ ...app, type: 'work' as const })),
+    ...ventureApplications.map(app => ({ ...app, type: 'venture' as const })),
+  ].sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime());
+
+  const filteredApplications = allApplications.filter(app => {
+    const matchesTab = activeTab === 'all' || app.type === activeTab;
+    const matchesSearch = 
+      (app as any).name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (app as any).founderName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (app as any).email?.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesSearch;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <LayoutDashboard className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl md:text-4xl text-slate-900">Tekva Dashboard</h1>
+    <div className="min-h-screen bg-slate-50">
+      {/* Top Navigation */}
+      <nav className="bg-white border-b border-slate-200 px-6 py-4">
+        <div className="flex justify-between items-center max-w-7xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="bg-blue-600 p-2 rounded-lg">
+              <TrendingUp className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xl font-bold text-slate-900">Tekva Admin</span>
           </div>
-          <p className="text-lg text-slate-600">Monitor and manage all applications</p>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm font-medium text-slate-600">System Active</span>
+            </div>
+            <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center">
+              <Users className="w-5 h-5 text-slate-600" />
+            </div>
+          </div>
         </div>
+      </nav>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div key={index} className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-lg bg-${stat.color}-100`}>
-                    <Icon className={`w-6 h-6 text-${stat.color}-600`} />
-                  </div>
-                  <div className="flex items-center gap-1 text-green-600 text-sm">
-                    <TrendingUp className="w-4 h-4" />
-                    {stat.change}
-                  </div>
-                </div>
-                <div className="text-3xl text-slate-900 mb-1">{stat.value}</div>
-                <div className="text-sm text-slate-600">{stat.label}</div>
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-blue-50 rounded-lg">
+                <Users className="w-6 h-6 text-blue-600" />
               </div>
-            );
-          })}
+              <span className="text-green-600 text-sm font-medium flex items-center gap-1">
+                +12% <TrendingUp className="w-3 h-3" />
+              </span>
+            </div>
+            <h3 className="text-slate-500 text-sm font-medium mb-1">Total Applications</h3>
+            <p className="text-3xl font-bold text-slate-900">{allApplications.length}</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-green-50 rounded-lg">
+                <DollarSign className="w-6 h-6 text-green-600" />
+              </div>
+              <span className="text-green-600 text-sm font-medium flex items-center gap-1">
+                +5% <TrendingUp className="w-3 h-3" />
+              </span>
+            </div>
+            <h3 className="text-slate-500 text-sm font-medium mb-1">Financial Support</h3>
+            <p className="text-3xl font-bold text-slate-900">{financialApplications.length}</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-purple-50 rounded-lg">
+                <Briefcase className="w-6 h-6 text-purple-600" />
+              </div>
+              <span className="text-green-600 text-sm font-medium flex items-center gap-1">
+                +8% <TrendingUp className="w-3 h-3" />
+              </span>
+            </div>
+            <h3 className="text-slate-500 text-sm font-medium mb-1">Work Pathways</h3>
+            <p className="text-3xl font-bold text-slate-900">{workApplications.length}</p>
+          </div>
+
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+            <div className="flex justify-between items-start mb-4">
+              <div className="p-3 bg-amber-50 rounded-lg">
+                <TrendingUp className="w-6 h-6 text-amber-600" />
+              </div>
+              <span className="text-green-600 text-sm font-medium flex items-center gap-1">
+                +15% <TrendingUp className="w-3 h-3" />
+              </span>
+            </div>
+            <h3 className="text-slate-500 text-sm font-medium mb-1">Venture Support</h3>
+            <p className="text-3xl font-bold text-slate-900">{ventureApplications.length}</p>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="border-b border-slate-200">
-            <div className="flex overflow-x-auto">
+        {/* Main Content */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+          {/* Toolbar */}
+          <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg w-full md:w-auto">
               <button
-                onClick={() => setActiveTab('overview')}
-                className={`px-6 py-4 whitespace-nowrap transition-colors ${
-                  activeTab === 'overview'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
+                onClick={() => setActiveTab('all')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === 'all'
+                    ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Overview
+                All
               </button>
               <button
                 onClick={() => setActiveTab('financial')}
-                className={`px-6 py-4 whitespace-nowrap transition-colors flex items-center gap-2 ${
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === 'financial'
-                    ? 'border-b-2 border-blue-600 text-blue-600'
+                    ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <DollarSign className="w-4 h-4" />
-                Financial Support
+                Financial
               </button>
               <button
                 onClick={() => setActiveTab('work')}
-                className={`px-6 py-4 whitespace-nowrap transition-colors flex items-center gap-2 ${
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === 'work'
-                    ? 'border-b-2 border-green-600 text-green-600'
+                    ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Briefcase className="w-4 h-4" />
-                Work Pathways
+                Work
               </button>
               <button
                 onClick={() => setActiveTab('venture')}
-                className={`px-6 py-4 whitespace-nowrap transition-colors flex items-center gap-2 ${
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeTab === 'venture'
-                    ? 'border-b-2 border-purple-600 text-purple-600'
+                    ? 'bg-white text-slate-900 shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <Rocket className="w-4 h-4" />
-                Ventures
+                Venture
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <div className="relative flex-1 md:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search applications..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <button className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600">
+                <Filter className="w-5 h-5" />
+              </button>
+              <button className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600">
+                <Download className="w-5 h-5" />
               </button>
             </div>
           </div>
 
-          <div className="p-6">
-            {/* Overview Tab */}
-            {activeTab === 'overview' && (
-              <div className="space-y-6">
-                <h2 className="text-xl text-slate-900 mb-4">Recent Activity</h2>
-                
-                <div className="space-y-4">
-                  {/* Recent Financial Applications */}
-                  {financialApplications.slice(0, 2).map((app) => (
-                    <div key={app.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-100">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-blue-600 text-white p-2 rounded-lg">
-                          <DollarSign className="w-5 h-5" />
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Applicant
+                  </th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Details
+                  </th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {filteredApplications.map((app: any) => (
+                  <tr key={app.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-medium">
+                          {(app.name || app.founderName || '?').charAt(0)}
                         </div>
                         <div>
-                          <p className="text-slate-900">{app.name}</p>
-                          <p className="text-sm text-slate-600">{app.supportType} • {app.date}</p>
+                          <p className="font-medium text-slate-900">{app.name || app.founderName}</p>
+                          <p className="text-sm text-slate-500">{app.email}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${getStatusColor(app.status)}`}>
-                          {getStatusIcon(app.status)}
-                          {app.status}
-                        </span>
-                        <button className="text-blue-600 hover:text-blue-700">
-                          <Eye className="w-5 h-5" />
-                        </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(app.type)}
+                        <span className="text-slate-700 capitalize">{app.type}</span>
                       </div>
-                    </div>
-                  ))}
-
-                  {/* Recent Work Applications */}
-                  {workApplications.slice(0, 2).map((app) => (
-                    <div key={app.id} className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-100">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-green-600 text-white p-2 rounded-lg">
-                          <Briefcase className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-slate-900">{app.name}</p>
-                          <p className="text-sm text-slate-600">{app.experience} experience • {app.date}</p>
-                        </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2 text-slate-600">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formatDate(app.created_at)}</span>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${getStatusColor(app.status)}`}>
-                          {getStatusIcon(app.status)}
-                          {app.status}
-                        </span>
-                        <button className="text-green-600 hover:text-green-700">
-                          <Eye className="w-5 h-5" />
-                        </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-slate-600">
+                        {app.type === 'financial' && (
+                          <>
+                            <p>Amount: {app.amount || 'N/A'}</p>
+                            <p>Type: {app.support_type}</p>
+                            {app.document_url && (
+                              <a 
+                                href={app.document_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                              >
+                                <FileText className="w-3 h-3" /> View Document
+                              </a>
+                            )}
+                          </>
+                        )}
+                        {app.type === 'work' && (
+                          <>
+                            <p>Role: {app.workType}</p>
+                            <p>Exp: {app.experience}</p>
+                            {app.cvUrl && (
+                              <a 
+                                href={app.cvUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:underline flex items-center gap-1 mt-1"
+                              >
+                                <FileText className="w-3 h-3" /> View CV
+                              </a>
+                            )}
+                          </>
+                        )}
+                        {app.type === 'venture' && (
+                          <>
+                            <p>Venture: {app.ventureName}</p>
+                            <p>Stage: {app.stage}</p>
+                          </>
+                        )}
                       </div>
-                    </div>
-                  ))}
-
-                  {/* Recent Venture Applications */}
-                  {ventureApplications.slice(0, 2).map((app) => (
-                    <div key={app.id} className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-100">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-purple-600 text-white p-2 rounded-lg">
-                          <Rocket className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <p className="text-slate-900">{app.ventureName}</p>
-                          <p className="text-sm text-slate-600">{app.founderName} • {app.stage} • {app.date}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 ${getStatusColor(app.status)}`}>
-                          {getStatusIcon(app.status)}
-                          {app.status}
-                        </span>
-                        <button className="text-purple-600 hover:text-purple-700">
-                          <Eye className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Financial Support Tab */}
-            {activeTab === 'financial' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl text-slate-900">Financial Support Applications</h2>
-                  <span className="text-sm text-slate-600">{financialApplications.length} total</span>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Applicant</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Support Type</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Family Size</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Amount</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Status</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Date</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {financialApplications.map((app) => (
-                        <tr key={app.id} className="border-t border-slate-200 hover:bg-slate-50">
-                          <td className="px-4 py-3 text-slate-900">{app.name}</td>
-                          <td className="px-4 py-3 text-slate-700">{app.supportType}</td>
-                          <td className="px-4 py-3 text-slate-700">{app.familySize}</td>
-                          <td className="px-4 py-3 text-slate-700">{app.amount || '—'}</td>
-                          <td className="px-4 py-3">
-                            <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 w-fit ${getStatusColor(app.status)}`}>
-                              {getStatusIcon(app.status)}
-                              {app.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-700">{app.date}</td>
-                          <td className="px-4 py-3">
-                            <button className="text-blue-600 hover:text-blue-700 text-sm">
-                              Review
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Work Pathways Tab */}
-            {activeTab === 'work' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl text-slate-900">Work Pathways Applications</h2>
-                  <span className="text-sm text-slate-600">{workApplications.length} total</span>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Name</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Skills</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Experience</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Status</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Date</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {workApplications.map((app) => (
-                        <tr key={app.id} className="border-t border-slate-200 hover:bg-slate-50">
-                          <td className="px-4 py-3 text-slate-900">{app.name}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex flex-wrap gap-1">
-                              {app.skills.slice(0, 2).map((skill) => (
-                                <span key={skill} className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs">
-                                  {skill}
-                                </span>
-                              ))}
-                              {app.skills.length > 2 && (
-                                <span className="text-xs text-slate-500">+{app.skills.length - 2}</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-slate-700">{app.experience}</td>
-                          <td className="px-4 py-3">
-                            <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 w-fit ${getStatusColor(app.status)}`}>
-                              {getStatusIcon(app.status)}
-                              {app.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-700">{app.date}</td>
-                          <td className="px-4 py-3">
-                            <button className="text-green-600 hover:text-green-700 text-sm">
-                              Match Jobs
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Ventures Tab */}
-            {activeTab === 'venture' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl text-slate-900">Venture Applications</h2>
-                  <span className="text-sm text-slate-600">{ventureApplications.length} total</span>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-slate-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Venture Name</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Founder</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Stage</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Status</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Date</th>
-                        <th className="px-4 py-3 text-left text-sm text-slate-700">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {ventureApplications.map((app) => (
-                        <tr key={app.id} className="border-t border-slate-200 hover:bg-slate-50">
-                          <td className="px-4 py-3 text-slate-900">{app.ventureName}</td>
-                          <td className="px-4 py-3 text-slate-700">{app.founderName}</td>
-                          <td className="px-4 py-3">
-                            <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-sm">
-                              {app.stage}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1 w-fit ${getStatusColor(app.status)}`}>
-                              {getStatusIcon(app.status)}
-                              {app.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-slate-700">{app.date}</td>
-                          <td className="px-4 py-3">
-                            <button className="text-purple-600 hover:text-purple-700 text-sm">
-                              Assess
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(app.status)}`}>
+                        {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors">
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Pagination */}
+          <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+            <p className="text-sm text-slate-600">
+              Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredApplications.length}</span> of <span className="font-medium">{filteredApplications.length}</span> results
+            </p>
+            <div className="flex gap-2">
+              <button className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50">
+                Previous
+              </button>
+              <button className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50">
+                Next
+              </button>
+            </div>
           </div>
         </div>
       </div>

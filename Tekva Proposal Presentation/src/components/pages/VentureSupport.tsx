@@ -57,8 +57,19 @@ export function VentureSupport() {
     try {
       await addVentureApplication({
         founderName: formData.founderName,
+        email: formData.email,
+        phone: formData.phone,
         ventureName: formData.ventureName,
         stage: formData.stage,
+        industry: formData.industry,
+        problem: formData.problem,
+        solution: formData.solution,
+        targetMarket: formData.targetMarket,
+        businessModel: formData.businessModel,
+        teamSize: formData.teamSize,
+        funding: formData.funding,
+        timeline: formData.timeline,
+        supportNeeded: formData.supportNeeded,
       });
       setSubmitted(true);
     } catch (error) {

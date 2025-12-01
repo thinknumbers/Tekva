@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { DollarSign, CheckCircle, Upload, AlertCircle } from 'lucide-react';
 import { useApplications } from '../../context/ApplicationContext';
 
@@ -6,6 +6,8 @@ export function FinancialSupport() {
   const { addFinancialApplication } = useApplications();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -35,15 +37,27 @@ export function FinancialSupport() {
     });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await addFinancialApplication({
         name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
         familySize: parseInt(formData.familySize),
         supportType: formData.supportType,
+        urgency: formData.urgency,
+        monthlyIncome: formData.monthlyIncome,
+        expenses: formData.expenses,
+        situation: formData.situation,
         amount: formData.amount,
-      });
+      }, file || undefined);
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -85,6 +99,7 @@ export function FinancialSupport() {
               onClick={() => {
                 setSubmitted(false);
                 setStep(1);
+                setFile(null);
                 setFormData({
                   name: '',
                   email: '',
@@ -306,12 +321,24 @@ export function FinancialSupport() {
                       <p className="text-sm text-slate-600 mb-4">
                         You can upload supporting documents such as bills, medical records, or proof of income.
                       </p>
-                      <button
-                        type="button"
-                        className="bg-white text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-sm"
-                      >
-                        Choose Files
-                      </button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="bg-white text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-sm"
+                        >
+                          Choose Files
+                        </button>
+                        {file && (
+                          <span className="text-sm text-slate-600">{file.name}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

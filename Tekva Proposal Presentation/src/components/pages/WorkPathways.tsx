@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Briefcase, CheckCircle, Sparkles } from 'lucide-react';
 import { useApplications } from '../../context/ApplicationContext';
 
@@ -6,6 +6,8 @@ export function WorkPathways() {
   const { addWorkApplication } = useApplications();
   const [step, setStep] = useState(1);
   const [submitted, setSubmitted] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -41,6 +43,12 @@ export function WorkPathways() {
     });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
   const toggleSkill = (skill: string) => {
     setFormData({
       ...formData,
@@ -55,9 +63,15 @@ export function WorkPathways() {
     try {
       await addWorkApplication({
         name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
         skills: formData.skills,
         experience: formData.experience,
-      });
+        availability: formData.availability,
+        workType: formData.workType,
+        education: formData.education,
+        goals: formData.goals,
+      }, file || undefined);
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting application:', error);
@@ -114,6 +128,7 @@ export function WorkPathways() {
               onClick={() => {
                 setSubmitted(false);
                 setStep(1);
+                setFile(null);
                 setFormData({
                   name: '',
                   email: '',
@@ -372,12 +387,24 @@ export function WorkPathways() {
                   <p className="text-sm text-slate-600 mb-4">
                     If you have an existing CV, upload it here. Otherwise, we'll help you create one.
                   </p>
-                  <button
-                    type="button"
-                    className="bg-white text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-sm"
-                  >
-                    Choose File
-                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="bg-white text-blue-600 px-4 py-2 rounded-lg border border-blue-200 hover:bg-blue-50 transition-colors text-sm"
+                    >
+                      Choose File
+                    </button>
+                    {file && (
+                      <span className="text-sm text-slate-600">{file.name}</span>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
