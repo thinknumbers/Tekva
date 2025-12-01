@@ -55,6 +55,18 @@ export interface VentureApplication {
   date: string;
 }
 
+export interface ApplicationComment {
+  id: string;
+  application_id: string;
+  application_type: 'financial' | 'work' | 'venture';
+  comment_type: 'comment' | 'status_change' | 'edit';
+  content: string;
+  previous_status?: string;
+  new_status?: string;
+  created_at: string;
+  created_by: string;
+}
+
 interface ApplicationContextType {
   financialApplications: FinancialApplication[];
   workApplications: WorkApplication[];
@@ -63,6 +75,9 @@ interface ApplicationContextType {
   addWorkApplication: (app: Omit<WorkApplication, 'id' | 'date' | 'status'>, file?: File) => Promise<void>;
   addVentureApplication: (app: Omit<VentureApplication, 'id' | 'date' | 'status'>) => Promise<void>;
   updateApplicationStatus: (id: string, type: 'financial' | 'work' | 'venture', status: string) => Promise<void>;
+  updateApplicationDetails: (id: string, type: 'financial' | 'work' | 'venture', data: any) => Promise<void>;
+  fetchComments: (applicationId: string, type: 'financial' | 'work' | 'venture') => Promise<ApplicationComment[]>;
+  addComment: (applicationId: string, type: 'financial' | 'work' | 'venture', content: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -270,15 +285,142 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
         ? 'work_applications' 
         : 'venture_applications';
 
+    // Get current status before updating
+    const { data: currentData } = await supabase
+      .from(table)
+      .select('status')
+      .eq('id', id)
+      .single();
+
+    const previousStatus = currentData?.status;
+
     const { error } = await supabase
       .from(table)
       .update({ status })
       .eq('id', id);
 
     if (error) throw error;
+
+    // Log the status change as a comment
+    await addActivityLog(id, type, 'status_change', `Status changed from ${previousStatus} to ${status}`, previousStatus, status);
     
     // Refresh data immediately
     fetchData();
+  };
+
+  const updateApplicationDetails = async (id: string, type: 'financial' | 'work' | 'venture', data: any) => {
+    const table = type === 'financial' 
+      ? 'financial_applications' 
+      : type === 'work' 
+        ? 'work_applications' 
+        : 'venture_applications';
+
+    // Map frontend camelCase to DB snake_case
+    const dbData: any = {};
+    
+    // Common fields
+    if (data.name) dbData.name = data.name;
+    if (data.email) dbData.email = data.email;
+    if (data.phone) dbData.phone = data.phone;
+    if (data.status) dbData.status = data.status;
+
+    // Financial fields
+    if (type === 'financial') {
+      if (data.familySize) dbData.family_size = data.familySize;
+      if (data.supportType) dbData.support_type = data.supportType;
+      if (data.urgency) dbData.urgency = data.urgency;
+      if (data.monthlyIncome) dbData.monthly_income = data.monthlyIncome;
+      if (data.expenses) dbData.expenses = data.expenses;
+      if (data.situation) dbData.situation = data.situation;
+      if (data.amount) dbData.amount = data.amount;
+    }
+
+    // Work fields
+    if (type === 'work') {
+      if (data.skills) dbData.skills = data.skills;
+      if (data.experience) dbData.experience = data.experience;
+      if (data.availability) dbData.availability = data.availability;
+      if (data.workType) dbData.work_type = data.workType;
+      if (data.education) dbData.education = data.education;
+      if (data.goals) dbData.goals = data.goals;
+    }
+
+    // Venture fields
+    if (type === 'venture') {
+      if (data.founderName) dbData.founder_name = data.founderName;
+      if (data.ventureName) dbData.venture_name = data.ventureName;
+      if (data.stage) dbData.stage = data.stage;
+      if (data.industry) dbData.industry = data.industry;
+      if (data.problem) dbData.problem = data.problem;
+      if (data.solution) dbData.solution = data.solution;
+      if (data.targetMarket) dbData.target_market = data.targetMarket;
+      if (data.businessModel) dbData.business_model = data.businessModel;
+      if (data.teamSize) dbData.team_size = data.teamSize;
+      if (data.funding) dbData.funding = data.funding;
+      if (data.timeline) dbData.timeline = data.timeline;
+      if (data.supportNeeded) dbData.support_needed = data.supportNeeded;
+    }
+
+    const { error } = await supabase
+      .from(table)
+      .update(dbData)
+      .eq('id', id);
+
+    if (error) throw error;
+    
+    fetchData();
+  };
+
+  // Helper function to add activity logs
+  const addActivityLog = async (
+    applicationId: string,
+    type: 'financial' | 'work' | 'venture',
+    commentType: 'comment' | 'status_change' | 'edit',
+    content: string,
+    previousStatus?: string,
+    newStatus?: string
+  ) => {
+    const { error } = await supabase
+      .from('application_comments')
+      .insert([{
+        application_id: applicationId,
+        application_type: type,
+        comment_type: commentType,
+        content,
+        previous_status: previousStatus,
+        new_status: newStatus,
+        created_by: 'System'
+      }]);
+
+    if (error) throw error;
+  };
+
+  // Fetch all comments for an application
+  const fetchComments = async (applicationId: string, type: 'financial' | 'work' | 'venture'): Promise<ApplicationComment[]> => {
+    const { data, error } = await supabase
+      .from('application_comments')
+      .select('*')
+      .eq('application_id', applicationId)
+      .eq('application_type', type)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  };
+
+  // Add a new manual comment
+  const addComment = async (applicationId: string, type: 'financial' | 'work' | 'venture', content: string) => {
+    const { error } = await supabase
+      .from('application_comments')
+      .insert([{
+        application_id: applicationId,
+        application_type: type,
+        comment_type: 'comment',
+        content,
+        created_by: 'Admin' // TODO: Replace with actual user when auth is implemented
+      }]);
+
+    if (error) throw error;
   };
 
   return (
@@ -291,6 +433,9 @@ export function ApplicationProvider({ children }: { children: ReactNode }) {
         addWorkApplication,
         addVentureApplication,
         updateApplicationStatus,
+        updateApplicationDetails,
+        fetchComments,
+        addComment,
         loading
       }}
     >

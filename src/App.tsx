@@ -5,13 +5,15 @@ import { FinancialSupport } from './components/pages/FinancialSupport';
 import { WorkPathways } from './components/pages/WorkPathways';
 import { VentureSupport } from './components/pages/VentureSupport';
 import { Dashboard } from './components/pages/Dashboard';
+import { ApplicationDetails } from './components/pages/ApplicationDetails';
 import { Tools } from './components/pages/Tools';
 import { ApplicationProvider } from './context/ApplicationContext';
 
-export type Page = 'home' | 'financial' | 'work' | 'venture' | 'dashboard' | 'tools';
+export type Page = 'home' | 'financial' | 'work' | 'venture' | 'dashboard' | 'applicationDetails' | 'tools';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState<Page>('home');
+  const [selectedApplication, setSelectedApplication] = useState<any>(null);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -24,7 +26,17 @@ export default function App() {
       case 'venture':
         return <VentureSupport />;
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onViewDetails={(app) => {
+          setSelectedApplication(app);
+          setCurrentPage('applicationDetails');
+        }} />;
+      case 'applicationDetails':
+        return selectedApplication ? (
+          <ApplicationDetails 
+            application={selectedApplication} 
+            onBack={() => setCurrentPage('dashboard')}
+          />
+        ) : null;
       case 'tools':
         return <Tools />;
       default:

@@ -19,7 +19,11 @@ import {
 } from 'lucide-react';
 import { useApplications } from '../../context/ApplicationContext';
 
-export function Dashboard() {
+interface DashboardProps {
+  onViewDetails: (application: any) => void;
+}
+
+export function Dashboard({ onViewDetails }: DashboardProps) {
   const { financialApplications, workApplications, ventureApplications, loading, updateApplicationStatus } = useApplications();
   const [activeTab, setActiveTab] = useState<'all' | 'financial' | 'work' | 'venture'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -249,6 +253,9 @@ export function Dashboard() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Application ID
+                  </th>
+                  <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Applicant
                   </th>
                   <th className="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -273,8 +280,13 @@ export function Dashboard() {
                   <tr 
                     key={app.id} 
                     className="hover:bg-slate-50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedApplication(app)}
+                    onClick={() => onViewDetails(app)}
                   >
+                    <td className="px-6 py-4">
+                      <p className="text-xs font-mono text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-200 inline-block">
+                        #{app.id.slice(0, 8)}
+                      </p>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-medium">
