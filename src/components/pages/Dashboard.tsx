@@ -15,7 +15,11 @@ import {
   X,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
+  Eye,
+  Edit,
+  Trash2,
+  RefreshCw
 } from 'lucide-react';
 import { useApplications } from '../../context/ApplicationContext';
 
@@ -28,6 +32,7 @@ export function Dashboard({ onViewDetails }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'all' | 'financial' | 'work' | 'venture'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -337,10 +342,69 @@ export function Dashboard({ onViewDetails }: DashboardProps) {
                         {app.status.charAt(0).toUpperCase() + app.status.slice(1)}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <button className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors">
+                    <td className="px-6 py-4 relative" onClick={(e) => e.stopPropagation()}>
+                      <button 
+                        onClick={() => setOpenDropdownId(openDropdownId === app.id ? null : app.id)}
+                        className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"
+                      >
                         <MoreVertical className="w-5 h-5" />
                       </button>
+                      
+                      {openDropdownId === app.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={() => setOpenDropdownId(null)}
+                          />
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-20">
+                            <button
+                              onClick={() => {
+                                onViewDetails(app);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                            >
+                              <Eye className="w-4 h-4" />
+                              View Details
+                            </button>
+                            <button
+                              onClick={() => {
+                                onViewDetails(app);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                            >
+                              <Edit className="w-4 h-4" />
+                              Edit Application
+                            </button>
+                            <div className="border-t border-slate-200 my-1" />
+                            <button
+                              onClick={() => {
+                                setSelectedApplication(app);
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                              Change Status
+                            </button>
+                            <div className="border-t border-slate-200 my-1" />
+                            <button
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to delete this application from ${app.name || app.founderName}?`)) {
+                                  // TODO: Implement delete functionality
+                                  console.log('Delete application:', app.id);
+                                }
+                                setOpenDropdownId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              Delete Application
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
